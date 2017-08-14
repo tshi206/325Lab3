@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,8 @@ import org.h2.tools.RunScript;
 import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import nz.ac.auckland.concert.Genre;
 
 /**
  * Implementation of the ConcertDAO interface. 
@@ -65,8 +68,8 @@ public class JDBCConcertDAO implements ConcertDAO {
 	private static final String SQL_INSERT_CONCERT = "INSERT INTO CONCERT VALUES (?,?,?,?)";
 	private static final String SQL_UPDATE_CONCERT = "UPDATE CONCERT SET TITLE = ?, DATE = ?, FK_PERFORMER_ID = ? WHERE ID = ?";
 	private static final String SQL_DELETE_CONCERT = "DELETE FROM CONCERT WHERE ID = ?";
-	private static final String SQL_SELECT_CONCERT_BY_ID = "";
-	private static final String SQL_SELECT_ALL_CONCERTS = "";
+	private static final String SQL_SELECT_CONCERT_BY_ID = "SELECT * FROM CONCERT WHERE ID = ?";
+	private static final String SQL_SELECT_ALL_CONCERTS = "SELECT * FROM CONCERT";
 	
 	// SQL for finding largest primary keys values in the Concert and Performer tables.
 	private static final String SQL_GET_LARGEST_PRIMARY_KEY_VALUE_FOR_CONCERT = "SELECT ID FROM CONCERT ORDER BY ID DESC LIMIT 1";
@@ -185,7 +188,7 @@ public class JDBCConcertDAO implements ConcertDAO {
 				preparedStatement.setString(2, concert.getTitle());
 				preparedStatement.setTimestamp(3, new Timestamp(concert.getDate().toDateTime().getMillis()));
 				preparedStatement.setLong(4, concert.getPerformer().getId());
-				preparedStatement .executeUpdate();
+				preparedStatement.executeUpdate();
 				
 				// Update the Concert's id instance variable.
 				concert.setId(key);
@@ -210,7 +213,35 @@ public class JDBCConcertDAO implements ConcertDAO {
 	 * 
 	 */
 	public Concert getById(long id) throws DAOException {
-		return null;
+		try {
+			PreparedStatement preparedStatement = _jdbcConnection.prepareStatement(SQL_SELECT_CONCERT_BY_ID);
+			preparedStatement.setLong(1, id);
+			ResultSet rs = preparedStatement.executeQuery();
+			if (rs.next()){
+				Long cid = rs.getLong(1);
+				String title = rs.getString(2);
+				LocalDateTime ldt = new org.joda.time.LocalDateTime(rs.getTimestamp(3).toLocalDateTime().toString());
+				Long pid = rs.getLong(4);
+				preparedStatement = _jdbcConnection.prepareStatement("SELECT * FROM PERFORMER WHERE ID = ?");
+				preparedStatement.setLong(1, pid);
+				ResultSet prs = preparedStatement.executeQuery();
+				Performer p = null;
+				if (prs.next()){
+//					_logger.debug(prs.getString(1)+" what???");
+//					_logger.debug(prs.getString(2)+" what???");
+//					_logger.debug(prs.getString(3)+" what???");
+//					_logger.debug(prs.getString(4)+" what???");
+					p = new Performer(prs.getLong(1), prs.getString(2), prs.getString(3), Genre.valueOf(prs.getString(4)));
+				}
+				Concert concert = new Concert(cid, title, ldt, p);
+				return concert;
+			}else{
+				return null;
+			}
+		} catch(SQLException e) {
+			_logger.debug(ERROR_LOADING_CONCERT, e);
+			throw new DAOException(ERROR_LOADING_CONCERT);
+		}
 	}
 
 	/**
@@ -218,7 +249,43 @@ public class JDBCConcertDAO implements ConcertDAO {
 	 * 
 	 */
 	public List<Concert> getAll() throws DAOException {
-		return null;
+		try {
+			PreparedStatement preparedStatement = _jdbcConnection.prepareStatement(SQL_SELECT_ALL_CONCERTS);
+			ResultSet rs = preparedStatement.executeQuery();
+			List<Concert> concertList = new ArrayList<Concert>();
+			List<Performer> performerList = new ArrayList<Performer>();
+			while (rs.next()){
+				Long cid = rs.getLong(1);
+				String title = rs.getString(2);
+				LocalDateTime ldt = new org.joda.time.LocalDateTime(rs.getTimestamp(3).toLocalDateTime().toString());
+				Long pid = rs.getLong(4);
+				preparedStatement = _jdbcConnection.prepareStatement("SELECT * FROM PERFORMER WHERE ID = ?");
+				preparedStatement.setLong(1, pid);
+				ResultSet prs = preparedStatement.executeQuery();
+				Performer p = null;
+				if (prs.next()){
+					p = new Performer(prs.getLong(1), prs.getString(2), prs.getString(3), Genre.valueOf(prs.getString(4)));
+					if (performerList.contains(p)){
+						for (Performer pf : performerList){
+							if (pf.equals(p)){
+								p = pf;
+								break;
+							}
+						}
+					}else{
+						performerList.add(p);
+					}
+				}
+				Concert concert = new Concert(cid, title, ldt, p);
+				concertList.add(concert);
+//				_logger.debug(concert.getTitle()+" what???");
+			}
+			Collections.sort(concertList);
+			return concertList;
+		} catch(SQLException e) {
+			_logger.debug(ERROR_LOADING_CONCERT, e);
+			throw new DAOException(ERROR_LOADING_CONCERT);
+		}
 	}
 
 	/**
