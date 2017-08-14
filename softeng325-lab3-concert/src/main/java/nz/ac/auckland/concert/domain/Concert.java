@@ -2,6 +2,12 @@ package nz.ac.auckland.concert.domain;
 
 import java.io.Serializable;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.joda.time.DateTime;
@@ -12,12 +18,19 @@ import org.joda.time.format.DateTimeFormatter;
  * Class to represent a Concert.
  *
  */
+@XmlRootElement(name="concert")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Concert implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 	
+	@XmlAttribute(name="id")
 	private Long _id;
+	
+	@XmlElement(name="title")
 	private String _title;
+	
+	@XmlElement(name="date")
 	private DateTime _date;
 
 	public Concert() {}

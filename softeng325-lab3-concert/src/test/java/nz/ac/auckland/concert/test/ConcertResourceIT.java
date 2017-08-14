@@ -15,6 +15,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation.Builder;
 import javax.ws.rs.core.GenericType;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 
@@ -103,7 +104,7 @@ public class ConcertResourceIT {
 			addCookieToInvocation(builder);
 			response = builder
 					.post(Entity.entity(concert,
-							"application/java-serialization"));
+							MediaType.APPLICATION_XML));
 			processCookieFromResponse(response);
 			String concertUri = response.getLocation().toString();
 			_concertUris.add(concertUri);
@@ -130,7 +131,7 @@ public class ConcertResourceIT {
 			// Make the service invocation via a HTTP POST message, and wait 
 			// for the response.
 			response = builder
-				.post(Entity.entity(concert, "application/java-serialization"));
+				.post(Entity.entity(concert, SerializationMessageBodyReaderAndWriter.APPLICATION_JAVA_SERIALIZED_OBJECT));
 
 			// Check that the HTTP response code is 201 Created.
 			int responseCode = response.getStatus();
@@ -158,7 +159,7 @@ public class ConcertResourceIT {
 			// Make an invocation on a Concert URI and specify Java-
 			// serialization as the required data format.
 			Builder builder = _client.target(concertUri).request()
-					.accept("application/java-serialization");
+					.accept(SerializationMessageBodyReaderAndWriter.APPLICATION_JAVA_SERIALIZED_OBJECT);
 			
 			// Add any cookie that's previously been returned by the Web 
 			// service.
@@ -193,7 +194,7 @@ public class ConcertResourceIT {
 			// serialization as the required data format. Specify values for
 			// query parameters start (2) and size (10).
 			Builder builder = _client.target(WEB_SERVICE_URI + "?start=2&size=10").request()
-					.accept("application/java-serialization");
+					.accept(SerializationMessageBodyReaderAndWriter.APPLICATION_JAVA_SERIALIZED_OBJECT);
 						
 			// Add any cookie that's previously been returned by the Web 
 			// service.
@@ -217,6 +218,112 @@ public class ConcertResourceIT {
 		}
 	}
 
+	@Test
+	public void testCreateXML() {
+		Response response = null;
+		
+		// Create a new Concert.
+		Concert concert = new Concert("Blondie", new DateTime(2017, 4, 26, 20,
+				0));
+		
+		try {
+			// Prepare an invocation on the Concert service
+			Builder builder = _client.target(WEB_SERVICE_URI).request();
+			
+			// Add any cookie that's previously been returned by the Web 
+			// service.
+			addCookieToInvocation(builder);
+			
+			// Make the service invocation via a HTTP POST message, and wait 
+			// for the response.
+			response = builder
+				.post(Entity.entity(concert, MediaType.APPLICATION_XML));
+
+			// Check that the HTTP response code is 201 Created.
+			int responseCode = response.getStatus();
+			assertEquals(201, responseCode);
+
+			// Check that the Location header has been set.
+			URI concertUri = response.getLocation();
+			assertNotNull(concertUri);
+			
+			// Store any cookie returned in the HTTP response message.
+			processCookieFromResponse(response);
+		} finally {
+			// Close the Response object.
+			response.close();
+		}
+	}
+
+	@Test
+	public void testRetrieveXML() {
+		Response response = null;
+
+		try {
+			String concertUri = _concertUris.get(_concertUris.size() - 1);
+
+			// Make an invocation on a Concert URI and specify Java-
+			// serialization as the required data format.
+			Builder builder = _client.target(concertUri).request()
+					.accept(MediaType.APPLICATION_XML);
+			
+			// Add any cookie that's previously been returned by the Web 
+			// service.
+			addCookieToInvocation(builder);
+
+			// Make the service invocation via a HTTP GET message, and wait for 
+			// the response.
+			response = builder.get();
+			
+			// Check that the HTTP response code is 200 OK.
+			int responseCode = response.getStatus();
+			assertEquals(200, responseCode);
+
+			// Check that the expected Concert is returned.
+			Concert concert = response.readEntity(Concert.class);
+			assertEquals(_concerts.get(_concerts.size() - 1).getTitle(), concert.getTitle());
+
+			// Store any cookie returned in the HTTP response message.
+			processCookieFromResponse(response);
+		} finally {
+			// Close the Response object.
+			response.close();
+		}
+	}
+
+	@Test
+	public void testRetrieveWithRangeXML() {
+		Response response = null;
+		
+		try {
+			// Prepare an invocation on a Concert URI and specify Java-
+			// serialization as the required data format. Specify values for
+			// query parameters start (2) and size (10).
+			Builder builder = _client.target(WEB_SERVICE_URI + "?start=2&size=10").request()
+					.accept(MediaType.APPLICATION_XML);
+						
+			// Add any cookie that's previously been returned by the Web 
+			// service.
+			addCookieToInvocation(builder);
+
+			// Make the service invocation via a HTTP GET message, and wait for 
+			// the response.
+			response = builder.get();
+	
+			// Check that 2 Concerts were returned.
+			ArrayList<Concert> concerts = response
+					.readEntity(new GenericType<ArrayList<Concert>>() {
+				});
+			assertEquals(2, concerts.size());
+			
+			// Store any cookie returned in the HTTP response message.
+			processCookieFromResponse(response);
+		} finally {
+			// Close the Response object.
+			response.close();
+		}
+	}
+	
 	@Test
 	public void testDelete() {
 		Response response = null;

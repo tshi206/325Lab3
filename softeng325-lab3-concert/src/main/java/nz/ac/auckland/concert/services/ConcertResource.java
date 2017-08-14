@@ -22,6 +22,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.GenericEntity;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
@@ -68,7 +69,7 @@ public class ConcertResource {
 	 */
 	@GET
 	@Path("{id}")
-	@Produces("application/java-serialization")
+	@Produces({SerializationMessageBodyReaderAndWriter.APPLICATION_JAVA_SERIALIZED_OBJECT, MediaType.APPLICATION_XML})
 	public Response retrieveConcert(@PathParam("id") long id, @CookieParam(Config.CLIENT_COOKIE) Cookie clientId) {
 		_logger.info("Retrieving concert with id: " + id);
 		// Lookup the Parolee within the in-memory data structure.
@@ -112,7 +113,7 @@ public class ConcertResource {
 	 * empty.
 	 */
 	@GET
-	@Produces("application/java-serialization")
+	@Produces({SerializationMessageBodyReaderAndWriter.APPLICATION_JAVA_SERIALIZED_OBJECT, MediaType.APPLICATION_XML})
 	public Response retrieveConcerts(@QueryParam("start") long start, @QueryParam("size") int size, @CookieParam(Config.CLIENT_COOKIE) Cookie clientId) {
 		// The Response object should store an ArrayList<Concert> entity. The 
 		// ArrayList can be empty depending on the start and size arguments, 
@@ -168,8 +169,8 @@ public class ConcertResource {
 	 * header.
 	 */
 	@POST
-	@Produces("application/java-serialization")
-	@Consumes("application/java-serialization")
+	@Produces({SerializationMessageBodyReaderAndWriter.APPLICATION_JAVA_SERIALIZED_OBJECT, MediaType.APPLICATION_XML})
+	@Consumes({SerializationMessageBodyReaderAndWriter.APPLICATION_JAVA_SERIALIZED_OBJECT, MediaType.APPLICATION_XML})
 	public Response createConcert(Concert concert, @CookieParam(Config.CLIENT_COOKIE) Cookie clientId) {
 		
 		if (concert == null){
